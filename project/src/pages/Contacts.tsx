@@ -4,6 +4,7 @@ import Breadcrumbs from '../components/Navigation/Breadcrumbs';
 import ContactList from '../components/Contacts/ContactList';
 import ContactImport from '../components/Contacts/ContactImport';
 import ContactDetail from '../components/Contacts/ContactDetail';
+import ContactModal from '../components/Contacts/ContactModal';
 import type { Contact } from '../types/contacts';
 
 export default function Contacts() {
@@ -11,6 +12,7 @@ export default function Contacts() {
   const [showImport, setShowImport] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewContact, setShowNewContact] = useState(false);
 
   const handleEdit = (contact: Contact) => {
     setSelectedContact(contact);
@@ -56,7 +58,10 @@ export default function Contacts() {
             </button>
           )}
 
-          <button className="btn btn-primary inline-flex items-center gap-2">
+          <button 
+            onClick={() => setShowNewContact(true)} 
+            className="btn btn-primary inline-flex items-center gap-2"
+          >
             <Plus size={16} />
             <span>New Contact</span>
           </button>
@@ -105,6 +110,17 @@ export default function Contacts() {
           onImportComplete={() => {
             setShowImport(false);
             // Refresh contact list
+          }}
+        />
+      )}
+
+      {showNewContact && (
+        <ContactModal
+          onClose={() => setShowNewContact(false)}
+          onSave={async (contact, createAnother) => {
+            // Implement save contact logic
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+            setShowNewContact(!createAnother);
           }}
         />
       )}

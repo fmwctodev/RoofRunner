@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Star, Bell, Filter, Plus } from 'lucide-react';
+import { Search, Star, Bell, Filter, Plus, Trash, Archive, UserPlus } from 'lucide-react';
 import { Thread } from '../../types/conversations';
 import ThreadItem from './ThreadItem';
 import ThreadSkeleton from './ThreadSkeleton';
@@ -11,6 +11,9 @@ interface ThreadListProps {
   onThreadSelect: (thread: Thread) => void;
   showFilterPanel: boolean;
   onCloseFilterPanel: () => void;
+  searchQuery: string;
+  selectedThreads: string[];
+  onSelectThreads: (ids: string[]) => void;
 }
 
 const ThreadList: React.FC<ThreadListProps> = ({ 
@@ -18,9 +21,11 @@ const ThreadList: React.FC<ThreadListProps> = ({
   selectedThread, 
   onThreadSelect,
   showFilterPanel,
-  onCloseFilterPanel
+  onCloseFilterPanel,
+  searchQuery,
+  selectedThreads,
+  onSelectThreads
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,6 +43,19 @@ const ThreadList: React.FC<ThreadListProps> = ({
     { id: 'starred', label: 'Starred' },
     { id: 'all', label: 'All' }
   ];
+
+  const handleSelectAll = () => {
+    if (selectedThreads.length === threads.length) {
+      onSelectThreads([]);
+    } else {
+      onSelectThreads(threads.map(t => t.id));
+    }
+  };
+
+  const handleBulkAction = (action: 'archive' | 'delete' | 'assign') => {
+    // Implement bulk actions
+    console.log(`Bulk ${action}:`, selectedThreads);
+  };
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200">
@@ -58,31 +76,36 @@ const ThreadList: React.FC<ThreadListProps> = ({
           ))}
         </div>
 
-        <div className="relative">
-          <Search 
-            size={18} 
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" 
-          />
-          <input
-            type="text"
-            placeholder="Search conversations..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <div className="flex justify-between mt-4">
-          <button 
-            onClick={onCloseFilterPanel}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
-          >
-            <Filter size={20} />
-          </button>
-          <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-md">
-            <Plus size={20} />
-          </button>
-        </div>
+        {selectedThreads.length > 0 && (
+          <div className="flex items-center justify-between py-2 border-t border-b border-gray-200 mb-4">
+            <span className="text-sm text-gray-600">
+              {selectedThreads.length} selected
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleBulkAction('archive')}
+                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
+                title="Archive selected"
+              >
+                <Archive size={16} />
+              </button>
+              <button
+                onClick={() => handleBulkAction('assign')}
+                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
+                title="Assign to user"
+              >
+                <UserPlus size={16} />
+              </button>
+              <button
+                onClick={() => handleBulkAction('delete')}
+                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
+                title="Delete selected"
+              >
+                <Trash size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -112,6 +135,14 @@ const ThreadList: React.FC<ThreadListProps> = ({
                 thread={thread}
                 isSelected={selectedThread?.id === thread.id}
                 onClick={() => onThreadSelect(thread)}
+                onSelect={(selected) => {
+                  onSelectThreads(
+                    selected
+                      ? [...selectedThreads, thread.id]
+                      : selectedThreads.filter(id => id !== thread.id)
+                  );
+                }}
+                isChecked={selectedThreads.includes(thread.id)}
               />
             ))}
           </div>
@@ -125,47 +156,55 @@ const ThreadList: React.FC<ThreadListProps> = ({
       >
         <div className="space-y-6">
           <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Status</h4>
-            <div className="space-y-2">
-              {['Active', 'Archived', 'Spam'].map((item) => (
-                <label key={item} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700">{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
             <h4 className="text-sm font-medium text-gray-900 mb-2">Channel</h4>
             <div className="space-y-2">
-              {['SMS', 'WhatsApp', 'Email', 'Voice'].map((item) => (
-                <label key={item} className="flex items-center space-x-2">
+              {['Email', 'SMS', 'Chat'].map((channel) => (
+                <label key={channel} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />
-                  <span className="text-sm text-gray-700">{item}</span>
+                  <span className="text-sm text-gray-700">{channel}</span>
                 </label>
               ))}
             </div>
           </div>
 
           <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Tags</h4>
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Status</h4>
             <div className="space-y-2">
-              {['Priority', 'Follow-up', 'New lead', 'Support'].map((item) => (
-                <label key={item} className="flex items-center space-x-2">
+              {['Unread', 'Read', 'Archived'].map((status) => (
+                <label key={status} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />
-                  <span className="text-sm text-gray-700">{item}</span>
+                  <span className="text-sm text-gray-700">{status}</span>
                 </label>
               ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Assigned To</h4>
+            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+              <option value="">Anyone</option>
+              <option value="me">Assigned to me</option>
+              <option value="unassigned">Unassigned</option>
+            </select>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Date Range</h4>
+            <div className="space-y-2">
+              <input
+                type="date"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              <input
+                type="date"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
             </div>
           </div>
         </div>

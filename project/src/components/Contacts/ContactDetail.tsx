@@ -2,23 +2,32 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { 
   X, Phone, Mail, Building, Tag, Clock, Edit,
-  MessageSquare, Calendar, FileText, Activity
+  MessageSquare, Calendar, FileText, Activity,
+  DollarSign, Download, Upload, Settings
 } from 'lucide-react';
 import type { Contact } from '../../types/contacts';
+import PhoneNumberManager from './PhoneNumberManager';
+import DocumentUploader from './DocumentUploader';
+import NotesPanel from './NotesPanel';
+import SubscriptionHistory from './SubscriptionHistory';
+import InvoiceHistory from './InvoiceHistory';
+import ConsentManager from './ConsentManager';
 
 interface ContactDetailProps {
   contact: Contact;
   onClose: () => void;
+  onUpdate: (updates: Partial<Contact>) => Promise<void>;
 }
 
-export default function ContactDetail({ contact, onClose }: ContactDetailProps) {
-  const [activeTab, setActiveTab] = useState<'timeline' | 'details' | 'custom' | 'activities'>('timeline');
+export default function ContactDetail({ contact, onClose, onUpdate }: ContactDetailProps) {
+  const [activeTab, setActiveTab] = useState<'timeline' | 'details' | 'billing' | 'documents' | 'notes'>('timeline');
 
   const tabs = [
     { id: 'timeline', label: 'Timeline', icon: Activity },
     { id: 'details', label: 'Details', icon: FileText },
-    { id: 'custom', label: 'Custom Fields', icon: Tag },
-    { id: 'activities', label: 'Activities', icon: Clock }
+    { id: 'billing', label: 'Billing', icon: DollarSign },
+    { id: 'documents', label: 'Documents', icon: Upload },
+    { id: 'notes', label: 'Notes', icon: MessageSquare }
   ];
 
   const renderTabContent = () => {
@@ -26,106 +35,62 @@ export default function ContactDetail({ contact, onClose }: ContactDetailProps) 
       case 'timeline':
         return (
           <div className="space-y-4">
-            {[
-              {
-                type: 'message',
-                icon: MessageSquare,
-                content: 'Sent follow-up email',
-                date: new Date()
-              },
-              {
-                type: 'appointment',
-                icon: Calendar,
-                content: 'Scheduled meeting',
-                date: new Date(Date.now() - 86400000)
-              }
-            ].map((item, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="p-2 rounded-full bg-gray-100">
-                  <item.icon size={16} className="text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-900">{item.content}</p>
-                  <p className="text-xs text-gray-500">
-                    {format(item.date, 'MMM d, yyyy h:mm a')}
-                  </p>
-                </div>
-              </div>
-            ))}
+            {/* Timeline items */}
           </div>
         );
 
       case 'details':
         return (
           <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Contact Information</h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail size={16} className="text-gray-400" />
-                  <span>{contact.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone size={16} className="text-gray-400" />
-                  <span>{contact.phone}</span>
-                </div>
-                {contact.custom_fields?.company && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Building size={16} className="text-gray-400" />
-                    <span>{contact.custom_fields.company}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <PhoneNumberManager
+              numbers={contact.phone_numbers || []}
+              onChange={async (numbers) => {
+                await onUpdate({ phone_numbers: numbers });
+              }}
+            />
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Tags</h3>
-              <div className="flex flex-wrap gap-2">
-                {contact.tags?.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <ConsentManager
+              contact={contact}
+              onUpdate={onUpdate}
+            />
           </div>
         );
 
-      case 'custom':
+      case 'billing':
         return (
-          <div className="space-y-4">
-            {Object.entries(contact.custom_fields || {}).map(([key, value]) => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-gray-700">
-                  {key}
-                </label>
-                <div className="mt-1 text-sm text-gray-900">{value}</div>
-              </div>
-            ))}
+          <div className="space-y-6">
+            <SubscriptionHistory subscriptions={contact.subscriptions || []} />
+            <InvoiceHistory invoices={contact.invoices || []} />
           </div>
         );
 
-      case 'activities':
+      case 'documents':
         return (
-          <div className="space-y-4">
-            {[
-              { type: 'Email sent', date: new Date() },
-              { type: 'Note added', date: new Date(Date.now() - 86400000) },
-              { type: 'Contact created', date: new Date(Date.now() - 172800000) }
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between py-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{activity.type}</p>
-                  <p className="text-xs text-gray-500">
-                    {format(activity.date, 'MMM d, yyyy h:mm a')}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <DocumentUploader
+            documents={contact.documents || []}
+            onUpload={async (files) => {
+              // Handle document upload
+            }}
+            onDelete={async (id) => {
+              // Handle document deletion
+            }}
+          />
+        );
+
+      case 'notes':
+        return (
+          <NotesPanel
+            notes={contact.notes || []}
+            onAddNote={async (content, parentId) => {
+              // Handle note creation
+            }}
+            onEditNote={async (id, content) => {
+              // Handle note update
+            }}
+            onDeleteNote={async (id) => {
+              // Handle note deletion
+            }}
+          />
         );
     }
   };

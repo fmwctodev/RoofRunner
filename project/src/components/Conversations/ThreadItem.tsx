@@ -8,9 +8,17 @@ interface ThreadItemProps {
   thread: Thread;
   isSelected: boolean;
   onClick: () => void;
+  onSelect: (selected: boolean) => void;
+  isChecked: boolean;
 }
 
-const ThreadItem: React.FC<ThreadItemProps> = ({ thread, isSelected, onClick }) => {
+const ThreadItem: React.FC<ThreadItemProps> = ({ 
+  thread, 
+  isSelected, 
+  onClick,
+  onSelect,
+  isChecked
+}) => {
   const getChannelIcon = (channel: string) => {
     switch (channel) {
       case 'sms':
@@ -27,20 +35,36 @@ const ThreadItem: React.FC<ThreadItemProps> = ({ thread, isSelected, onClick }) 
   return (
     <div
       className={cn(
-        'flex items-center p-3 h-[72px] cursor-pointer transition-colors',
+        'flex items-center p-3 cursor-pointer transition-colors',
         isSelected ? 'bg-primary-50' : 'hover:bg-gray-50'
       )}
       onClick={onClick}
     >
+      <div className="flex items-center mr-3" onClick={(e) => e.stopPropagation()}>
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={(e) => onSelect(e.target.checked)}
+          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+        />
+      </div>
+      
       <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium">
         {thread.contact.name.split(' ').map(n => n[0]).join('')}
       </div>
       
       <div className="ml-3 flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900 truncate">
-            {thread.contact.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-gray-900 truncate">
+              {thread.contact.name}
+            </h3>
+            {thread.contact.custom_fields?.company && (
+              <span className="text-xs text-gray-500">
+                • {thread.contact.custom_fields.company}
+              </span>
+            )}
+          </div>
           <span className="text-xs text-gray-500">
             {format(thread.lastMessage.timestamp, 'MMM d')}
           </span>

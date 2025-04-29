@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Filter, Plus } from 'lucide-react';
+import { Filter, Plus, Search } from 'lucide-react';
 import Breadcrumbs from '../components/Navigation/Breadcrumbs';
 import ThreadList from '../components/Conversations/ThreadList';
 import MessageDetail from '../components/Conversations/MessageDetail';
@@ -12,6 +12,8 @@ const Conversations: React.FC = () => {
   const [threads] = useState(() => generateThreads(20));
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showProfile, setShowProfile] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedThreads, setSelectedThreads] = useState<string[]>([]);
 
   return (
     <div className="space-y-6">
@@ -27,6 +29,17 @@ const Conversations: React.FC = () => {
         </div>
         
         <div className="flex gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
           <button 
             onClick={() => setShowFilterPanel(true)}
             className="btn btn-secondary inline-flex items-center gap-2"
@@ -34,6 +47,7 @@ const Conversations: React.FC = () => {
             <Filter size={16} />
             <span>Filter</span>
           </button>
+          
           <button className="btn btn-primary inline-flex items-center gap-2">
             <Plus size={16} />
             <span>New Conversation</span>
@@ -49,8 +63,12 @@ const Conversations: React.FC = () => {
             onThreadSelect={setSelectedThread}
             showFilterPanel={showFilterPanel}
             onCloseFilterPanel={() => setShowFilterPanel(false)}
+            searchQuery={searchQuery}
+            selectedThreads={selectedThreads}
+            onSelectThreads={setSelectedThreads}
           />
         </div>
+        
         <div className="col-span-12 lg:col-span-5 flex flex-col mt-gutter lg:mt-0">
           <MessageDetail 
             thread={selectedThread}
@@ -58,6 +76,7 @@ const Conversations: React.FC = () => {
             onToggleProfile={() => setShowProfile(!showProfile)} 
           />
         </div>
+        
         {showProfile && (
           <div className="col-span-12 lg:col-span-3 flex flex-col mt-gutter lg:mt-0">
             <ContactProfile contact={selectedThread?.contact ?? null} />
